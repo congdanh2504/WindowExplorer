@@ -367,7 +367,6 @@ public class MainActivity {
 	    			}  
 				} else if (f.isDirectory()) {
 					deleteDir(f);
-					JOptionPane.showMessageDialog(null, "Successful!");
 				}		
 			}  
 			catch(Exception e1)  {  
@@ -387,81 +386,125 @@ public class MainActivity {
 	}
 	
 	public void paste() {
+		File file = new File(pathtemp);
 		if (iscut) {
-			InputStream inStream = null;
-	        OutputStream outStream = null;
-	 
-	        try {
-	            inStream = new FileInputStream(new File(pathtemp));
-	            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
-	            int length;
-	            byte[] buffer = new byte[1024];
-	            while ((length = inStream.read(buffer)) > 0) {
-	                outStream.write(buffer, 0, length);
-	            }
-	        } catch (IOException e1) {
-	            e1.printStackTrace();
-	        } finally {
-	            try {
-					inStream.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
+			if (file.isFile()) cutaFile(file);
+			if (file.isDirectory()) {
+				String source = pathtemp;
+				String target = backpath.peek()+"\\"+conver3(pathtemp);
+				File theDir = new File(target);
+				if (!theDir.exists()){
+				    theDir.mkdirs();    
+				    copyaDir(source, target);
 				}
-	            try {
-					outStream.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-	        }
-	        try  {         
-    			File f= new File(pathtemp);  
-    			if (f.isFile()) {
-    				if(f.delete()) {  
-	    				JOptionPane.showMessageDialog(null, "Successful!");
-	    			}  
-	    			else  {  
-	    				JOptionPane.showMessageDialog(null, "Failed");  
-	    			}  
-    			} else if (f.isDirectory()) {
-    				
-    			}
-    			
-    		}  
-    		catch(Exception e1)  {  
-    			e1.printStackTrace();  
-    		}  
+				deleteDir(new File(source));
+			}
 		} else {
-			InputStream inStream = null;
-	        OutputStream outStream = null;
-	 
-	        try {
-	            inStream = new FileInputStream(new File(pathtemp));
-	            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
-	            int length;
-	            byte[] buffer = new byte[1024];
-	            while ((length = inStream.read(buffer)) > 0) {
-	                outStream.write(buffer, 0, length);
-	            }
-	            JOptionPane.showMessageDialog(null, "File is copied successful!");
-	        } catch (IOException e1) {
-	            e1.printStackTrace();
-	        } finally {
-	            try {
-					inStream.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
+			if (file.isFile()) copyaFile(file,backpath.peek()+"\\"+conver3(pathtemp));
+			if (file.isDirectory()) {
+				String source = pathtemp;
+				String target = backpath.peek()+"\\"+conver3(pathtemp);
+				File theDir = new File(target);
+				if (!theDir.exists()){
+				    theDir.mkdirs();    
+				    copyaDir(source, target);
 				}
-	            try {
-					outStream.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-	        }
+			}
 		}
 		if (backpath!=null)
 			listFile(backpath.peek());
 		isclick = false;
 		pasteItem.setEnabled(false);	
+	}
+	
+	void copyaDir(String source,String target) {
+		File file = new File(source);
+		File [] filenames = file.listFiles();
+		if (filenames!=null) {
+			for (int i=0;i<filenames.length;i++) {
+				if (filenames[i].isDirectory()) {
+					File theDir = new File(target+"\\"+conver3(filenames[i].toString()));
+				    theDir.mkdirs();    
+				    copyaDir(filenames[i].toString(), target+"\\"+conver3(filenames[i].toString()));
+				}
+				if (filenames[i].isFile()) {
+					copyaFile(filenames[i], target+"\\"+conver3(filenames[i].toString()));
+				}
+			}
+		}	
+	}
+	
+	void copyaFile(File file, String output) {
+		InputStream inStream = null;
+        OutputStream outStream = null;
+ 
+        try {
+            inStream = new FileInputStream(file);
+            outStream = new FileOutputStream(new File(output));	 
+            int length;
+            byte[] buffer = new byte[1024];
+            while ((length = inStream.read(buffer)) > 0) {
+                outStream.write(buffer, 0, length);
+            }
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } finally {
+            try {
+				inStream.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+            try {
+				outStream.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+        }
+	}
+	
+	void cutaFile(File file) {
+		InputStream inStream = null;
+        OutputStream outStream = null;
+ 
+        try {
+            inStream = new FileInputStream(file);
+            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
+            int length;
+            byte[] buffer = new byte[1024];
+            while ((length = inStream.read(buffer)) > 0) {
+                outStream.write(buffer, 0, length);
+            }
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } finally {
+            try {
+				inStream.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+            try {
+				outStream.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+        }
+        try  {         
+			File f= new File(pathtemp);  
+			if (f.isFile()) {
+				if(f.delete()) {  
+					
+    			}  
+    			else  {  
+    				JOptionPane.showMessageDialog(null, "Failed");  
+    			}  
+			} else if (f.isDirectory()) {
+				
+			}
+			
+		}  
+		catch(Exception e1)  {  
+			e1.printStackTrace();  
+		}  
 	}
 	
 	public void filecliked(MouseEvent e) {
