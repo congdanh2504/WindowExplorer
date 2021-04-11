@@ -400,7 +400,7 @@ public class MainActivity {
 				deleteDir(new File(source));
 			}
 		} else {
-			if (file.isFile()) copyaFile(file,backpath.peek()+"\\"+conver3(pathtemp));
+			if (file.isFile()) copyaFile(file,new File(backpath.peek()+"\\"+conver3(pathtemp)));
 			if (file.isDirectory()) {
 				String source = pathtemp;
 				String target = backpath.peek()+"\\"+conver3(pathtemp);
@@ -428,19 +428,19 @@ public class MainActivity {
 				    copyaDir(filenames[i].toString(), target+"\\"+conver3(filenames[i].toString()));
 				}
 				if (filenames[i].isFile()) {
-					copyaFile(filenames[i], target+"\\"+conver3(filenames[i].toString()));
+					copyaFile(filenames[i],new File(target+"\\"+conver3(filenames[i].toString())));
 				}
 			}
 		}	
 	}
 	
-	void copyaFile(File file, String output) {
+	void copyaFile(File file, File output) {
 		InputStream inStream = null;
         OutputStream outStream = null;
  
         try {
             inStream = new FileInputStream(file);
-            outStream = new FileOutputStream(new File(output));	 
+            outStream = new FileOutputStream(output);	 
             int length;
             byte[] buffer = new byte[1024];
             while ((length = inStream.read(buffer)) > 0) {
