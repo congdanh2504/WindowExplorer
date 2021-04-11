@@ -244,7 +244,6 @@ public class MainActivity {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				iscut = true;
-				isclick = true;
 				pathtemp = list_1.getSelectedValue().toString();
 				pasteItem.setEnabled(true);
 			}
@@ -254,7 +253,6 @@ public class MainActivity {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				iscut = false;
-				isclick = true;
 				pathtemp = list_1.getSelectedValue().toString();	
 				pasteItem.setEnabled(true);
 			}
@@ -285,7 +283,6 @@ public class MainActivity {
 	public void read(DefaultMutableTreeNode par,String path) {
 		File f = new File(path);
 	  	String filenames[] =  f.list();
-
 	  	if (filenames!=null) {
 	  		for (int i=0;i<filenames.length;i++) {
 		  		DefaultMutableTreeNode child = new DefaultMutableTreeNode(filenames[i]);
@@ -321,7 +318,8 @@ public class MainActivity {
 				break;
 			}
 		}
-		sub+=String.valueOf(dis)+":\\"+disk.substring(id);
+		sub+=String.valueOf(dis)+":"+"\\"+disk.substring(id);
+		sub = sub.replace("\\\\", "\\");
 		return sub;
 	}
 	
@@ -339,116 +337,131 @@ public class MainActivity {
 	
 	public void listFile(String path) {
 		try {
-			backpath.push(path);
-			address.setText(path);
+			String pathStack;
+			if (backpath.isEmpty()) backpath.push(path);
+			if ((pathStack= backpath.peek())!=path) backpath.push(path);
 			list_1.setListData(new File(path).listFiles());
 		    list_1.setCellRenderer(new MyCellRenderer());
 		    list_1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
 		    list_1.setLayoutOrientation(javax.swing.JList.VERTICAL);
 			pane.setViewportView(list_1);
+			address.setText(path);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null, "Error");
 		}
 	}
 	
 	public void delete() {
-		try  {         
-			File f= new File(list_1.getSelectedValue().toString());
-			if (f.isFile()) {
-				if(f.delete()) {  
-    				JOptionPane.showMessageDialog(null, "Successful!");
-    			}  
-    			else  {  
-    				JOptionPane.showMessageDialog(null, "Failed");  
-    			}  
-			} else if (f.isDirectory()) {
-				
-			}		
-		}  
-		catch(Exception e1)  {  
-			e1.printStackTrace();  
-		}  
-		if (backpath!=null) listFile(backpath.peek());
+		String []list = {"Yes","No"};		
+		int check = JOptionPane.showOptionDialog(null,"Do you want to delete it?","Messeger",JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,null,list,0);
+		if (check==0) {
+			String path = list_1.getSelectedValue().toString();
+			try  {      
+				File f= new File(path);
+				if (f.isFile()) {
+					if(f.delete()) {  
+	    				JOptionPane.showMessageDialog(null, "Successful!");
+	    			}  
+	    			else  {  
+	    				JOptionPane.showMessageDialog(null, "Failed");  
+	    			}  
+				} else if (f.isDirectory()) {
+					deleteDir(f);
+					JOptionPane.showMessageDialog(null, "Successful!");
+				}		
+			}  
+			catch(Exception e1)  {  
+				e1.printStackTrace();  
+			}  
+			
+			if (backpath!=null) listFile(backpath.peek());
+			for (int i=0;i<backpath.size();i++) {
+				if (backpath.elementAt(i).contains(path)) {
+					backpath.remove(backpath.indexOf(backpath.elementAt(i)));
+					i--;
+				}
+			}
+			if (!prepath.isEmpty()) if (path.equals(prepath.peek())) prepath.clear();
+		}
+		
 	}
 	
 	public void paste() {
-		if (isclick) {
-			if (iscut) {
-				InputStream inStream = null;
-		        OutputStream outStream = null;
-		 
-		        try {
-		            inStream = new FileInputStream(new File(pathtemp));
-		            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
-		            int length;
-		            byte[] buffer = new byte[1024];
-		            while ((length = inStream.read(buffer)) > 0) {
-		                outStream.write(buffer, 0, length);
-		            }
-		        } catch (IOException e1) {
-		            e1.printStackTrace();
-		        } finally {
-		            try {
-						inStream.close();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-		            try {
-						outStream.close();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-		        }
-		        try  {         
-	    			File f= new File(pathtemp);  
-	    			if (f.isFile()) {
-	    				if(f.delete()) {  
-		    				JOptionPane.showMessageDialog(null, "Successful!");
-		    			}  
-		    			else  {  
-		    				JOptionPane.showMessageDialog(null, "Failed");  
-		    			}  
-	    			} else if (f.isDirectory()) {
-	    				
-	    			}
-	    			
-	    		}  
-	    		catch(Exception e1)  {  
-	    			e1.printStackTrace();  
-	    		}  
-			} else {
-				InputStream inStream = null;
-		        OutputStream outStream = null;
-		 
-		        try {
-		            inStream = new FileInputStream(new File(pathtemp));
-		            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
-		            int length;
-		            byte[] buffer = new byte[1024];
-		            while ((length = inStream.read(buffer)) > 0) {
-		                outStream.write(buffer, 0, length);
-		            }
-		            JOptionPane.showMessageDialog(null, "File is copied successful!");
-		        } catch (IOException e1) {
-		            e1.printStackTrace();
-		        } finally {
-		            try {
-						inStream.close();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-		            try {
-						outStream.close();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-		        }
-			}
-			if (backpath!=null)
-				listFile(backpath.peek());
-			isclick = false;
-			pasteItem.setEnabled(false);
-		}		
+		if (iscut) {
+			InputStream inStream = null;
+	        OutputStream outStream = null;
+	 
+	        try {
+	            inStream = new FileInputStream(new File(pathtemp));
+	            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
+	            int length;
+	            byte[] buffer = new byte[1024];
+	            while ((length = inStream.read(buffer)) > 0) {
+	                outStream.write(buffer, 0, length);
+	            }
+	        } catch (IOException e1) {
+	            e1.printStackTrace();
+	        } finally {
+	            try {
+					inStream.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+	            try {
+					outStream.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+	        }
+	        try  {         
+    			File f= new File(pathtemp);  
+    			if (f.isFile()) {
+    				if(f.delete()) {  
+	    				JOptionPane.showMessageDialog(null, "Successful!");
+	    			}  
+	    			else  {  
+	    				JOptionPane.showMessageDialog(null, "Failed");  
+	    			}  
+    			} else if (f.isDirectory()) {
+    				
+    			}
+    			
+    		}  
+    		catch(Exception e1)  {  
+    			e1.printStackTrace();  
+    		}  
+		} else {
+			InputStream inStream = null;
+	        OutputStream outStream = null;
+	 
+	        try {
+	            inStream = new FileInputStream(new File(pathtemp));
+	            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+conver3(pathtemp)));	 
+	            int length;
+	            byte[] buffer = new byte[1024];
+	            while ((length = inStream.read(buffer)) > 0) {
+	                outStream.write(buffer, 0, length);
+	            }
+	            JOptionPane.showMessageDialog(null, "File is copied successful!");
+	        } catch (IOException e1) {
+	            e1.printStackTrace();
+	        } finally {
+	            try {
+					inStream.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+	            try {
+					outStream.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+	        }
+		}
+		if (backpath!=null)
+			listFile(backpath.peek());
+		isclick = false;
+		pasteItem.setEnabled(false);	
 	}
 	
 	public void filecliked(MouseEvent e) {
@@ -478,6 +491,20 @@ public class MainActivity {
             list.setSelectedIndex(row);
             popupMenu.show(e.getComponent(),e.getX(), e.getY());
 		}
+	}
+	
+	private void deleteDir(File folder) {
+	    File[] listofFiles = folder.listFiles();
+    	for (int j = 0; j < listofFiles.length; j++) {
+            File file = listofFiles[j];
+            if (file.isFile()) {
+            	file.delete();
+            }
+            if (file.isDirectory()) {
+            	deleteDir(file);
+            }   
+        } 
+        folder.delete();
 	}
 	
 	private static class MyCellRenderer extends DefaultListCellRenderer  {
