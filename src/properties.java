@@ -17,13 +17,13 @@ import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-public class properties extends JFrame {
+public class Properties extends JFrame {
 
 	private JPanel contentPane;
 
-	public properties(String pathh) {
+	public Properties(String pathh) {
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setBounds(600, 100, 261, 347);
+		setBounds(600, 100, 349, 420);
 		setTitle("Properties");
 		File file = new File(pathh);
 		contentPane = new JPanel();

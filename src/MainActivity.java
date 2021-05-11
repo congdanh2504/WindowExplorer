@@ -24,6 +24,7 @@ import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.filechooser.FileSystemView;
 
 import java.awt.BorderLayout;
@@ -53,6 +54,8 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
@@ -61,34 +64,20 @@ import java.awt.Color;
 import java.awt.SystemColor;
 import javax.swing.JProgressBar;
 
-public class MainActivity implements ActionListener, TreeSelectionListener, MouseListener{
+public class MainActivity extends JFrame implements ActionListener, TreeSelectionListener, MouseListener, KeyListener{
 
-	private JFrame frame;
-	private JTree tree;
-	private JList slidelist = new JList();
+	private JTree tree = new JTree();
+	private JList slideList = new JList();
 	private JScrollPane pane;
-	private Stack<String> backpath = new Stack<>();
-	private Stack<String> prepath = new Stack<>();
+	private Stack<String> backPathStack = new Stack<>();
+	private Stack<String> prePathStack = new Stack<>();
 	private JPopupMenu popupMenu;
 	private JMenuItem cutItem, copyItem, pasteItem,propertiesItem,deleteItem;
-	private File pathtemp;
-	private JLabel address;
-	private JProgressBar progressBar;
-	private boolean iscut= false;
+	private File tempFile;
+	private JTextField lblAddress;
+	private JProgressBar progressBarLoading;
+	private boolean isCut = false;
 	private JButton btnBack, btnPre;
-
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					MainActivity window = new MainActivity();
-					window.frame.setVisible(true);
-				} catch (Exception e) {
-					JOptionPane.showMessageDialog(null, "Error");
-				}
-			}
-		});
-	}
 
 	public MainActivity() {
 		initView();
@@ -96,14 +85,13 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 	}
 
 	public void initView() {
-		frame = new JFrame();
-		frame.getContentPane().setBackground(Color.WHITE);
-		frame.setBounds(350, 100, 700, 500);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setTitle("Windows Explorer");
-		frame.setIconImage(new ImageIcon("folder.png").getImage());
+		getContentPane().setBackground(Color.WHITE);
+		setBounds(350, 100, 700, 500);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setTitle("Windows Explorer");
+		setIconImage(new ImageIcon("folder.png").getImage());
 		
-		popupMenu = new JPopupMenu("Test Popup Menu");
+		popupMenu = new JPopupMenu("Menu");
 		cutItem = new JMenuItem("Cut");
 		popupMenu.add(cutItem);
 		popupMenu.addSeparator();
@@ -120,7 +108,6 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 		propertiesItem = new JMenuItem("Properties");
 		popupMenu.add(propertiesItem);
 		
-	    tree = new JTree();
 	    tree.setModel(new DefaultTreeModel(
 	    	new DefaultMutableTreeNode() {
 	    		{
@@ -130,22 +117,23 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 	    		          disk.setUserObject(drv);
 	    		          this.add(disk);
 		  		  	}
-	    			this.setUserObject(new File("C:\\Users\\Admin\\OneDrive\\Desktop"));
+	    			this.setUserObject(new File("This PC"));
 	    		}
 	    	}
 	    ));	    
 	    tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         tree.setCellRenderer(new FileTreeCellRenderer());
-        JPanel bottom = new JPanel();
-        bottom.setLayout(new BorderLayout());
-        frame.getContentPane().add(bottom, BorderLayout.CENTER);
+        JPanel bottomPane = new JPanel();
+        bottomPane.setLayout(new BorderLayout());
+        getContentPane().add(bottomPane, BorderLayout.CENTER);
         pane = new JScrollPane();
-		bottom.add(pane, BorderLayout.CENTER);
+        bottomPane.add(pane, BorderLayout.CENTER);
 		
 		JPanel panel = new JPanel();
 		panel.setBackground(Color.WHITE);
-		bottom.add(panel,BorderLayout.NORTH);
+		bottomPane.add(panel,BorderLayout.NORTH);
 		panel.setLayout(new BorderLayout(0, 0));
+		
 		btnBack = new JButton();
 		btnBack.setIcon(new ImageIcon("backt.png"));
 		btnBack.setFocusable(false);
@@ -153,6 +141,7 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 		btnPre.setIcon(new ImageIcon("pre.png"));
 		btnPre.setBackground(Color.WHITE);
 		btnPre.setFocusable(false);
+		
 		JPanel btn = new JPanel();
 		btn.setBackground(Color.WHITE);
 		btn.setLayout(new FlowLayout());
@@ -160,19 +149,21 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 		btn.add(btnPre);
 		btnBack.setBackground(Color.WHITE);
 		panel.add(btn,BorderLayout.WEST);
-		address = new JLabel();
-		address.setForeground(Color.BLACK);
-		address.setOpaque(true);
-		address.setBackground(Color.WHITE);
-		address.setFont(new Font("Dialog", Font.BOLD, 12));
-		progressBar = new JProgressBar();
-		panel.add(progressBar, BorderLayout.EAST);
-        progressBar.setVisible(false);
-		progressBar.setForeground(Color.GREEN);
-		progressBar.setBackground(Color.WHITE);
-		panel.add(address,BorderLayout.CENTER);
+		
+		lblAddress = new JTextField();
+		lblAddress.setForeground(Color.BLACK);
+		lblAddress.setOpaque(true);
+		lblAddress.setBackground(Color.WHITE);
+		lblAddress.setFont(new Font("Dialog", Font.BOLD, 12));
+		
+		progressBarLoading = new JProgressBar();
+		panel.add(progressBarLoading, BorderLayout.EAST);
+		progressBarLoading.setVisible(false);
+		progressBarLoading.setForeground(Color.GREEN);
+		progressBarLoading.setBackground(Color.WHITE);
+		panel.add(lblAddress,BorderLayout.CENTER);
 		JScrollPane panes = new JScrollPane(tree);
-		bottom.add(panes, BorderLayout.WEST);	
+		bottomPane.add(panes, BorderLayout.WEST);	
 		
 	}
 	
@@ -180,15 +171,16 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 		btnBack.addActionListener(this);
 		btnPre.addActionListener(this);	
 		tree.addTreeSelectionListener(this);
-		slidelist.addMouseListener(this);
+		slideList.addMouseListener(this);
 		cutItem.addActionListener(this);
 		copyItem.addActionListener(this);
 		deleteItem.addActionListener(this);
 		pasteItem.addActionListener(this);
 		propertiesItem.addActionListener(this);
+		lblAddress.addKeyListener(this);
 	}
 	
-	public void read(DefaultMutableTreeNode par,String path) {
+	public void readFiles(DefaultMutableTreeNode par,String path) {
 		File f = new File(path);
 	  	File filenames[] =  FileSystemView.getFileSystemView().getFiles(f, true);
 	  	if (filenames!=null) {
@@ -200,34 +192,32 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 	  	}
 	}
 		
-	public void listFile(String path) {
+	public void listFiles(String path) {
 		try {
 			String pathStack;
-			if (backpath.isEmpty()) backpath.push(path);
-			if ((pathStack= backpath.peek())!=path) backpath.push(path);
+			if (backPathStack.isEmpty()) backPathStack.push(path);
+			if ((pathStack= backPathStack.peek())!=path) backPathStack.push(path);
 			File fi = new File(path);
 			File list[] = FileSystemView.getFileSystemView().getFiles(fi,true);
-			slidelist.setListData(list);
-			slidelist.setCellRenderer(new MyCellRenderer());
-			slidelist.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-			slidelist.setLayoutOrientation(javax.swing.JList.VERTICAL);
-			pane.setViewportView(slidelist);
-			address.setText(path);
+			slideList.setListData(list);
+			slideList.setCellRenderer(new FileListCellRenderer());
+			slideList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+			slideList.setLayoutOrientation(javax.swing.JList.VERTICAL);
+			pane.setViewportView(slideList);
+			lblAddress.setText(path);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null, "Error");
 		}
 	}
 	
 	public void delete() {	
-		String path = slidelist.getSelectedValue().toString();
+		String path = slideList.getSelectedValue().toString();
 		try  {      
 			File f= new File(path);
 			if (f.isFile()) {
-				if(f.delete()) {  
-    			}  
-    			else  {  
-    				JOptionPane.showMessageDialog(null, "Failed");  
-    			}  
+				if(!f.delete()) {  
+					JOptionPane.showMessageDialog(null, "Failed");  
+    			}   
 			} else if (f.isDirectory()) {
 				deleteDir(f);
 			}		
@@ -236,48 +226,52 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 			e1.printStackTrace();  
 		}  
 		
-		if (backpath!=null) execute("list", backpath.peek());
-		for (int i=0;i<backpath.size();i++) {
-			if (backpath.elementAt(i).contains(path)) {
-				backpath.remove(backpath.indexOf(backpath.elementAt(i)));
+		if (backPathStack!=null) executeInBackground("list", backPathStack.peek());
+		for (int i=0;i<backPathStack.size();i++) {
+			if (backPathStack.elementAt(i).contains(path)) {
+				backPathStack.remove(backPathStack.indexOf(backPathStack.elementAt(i)));
 				i--;
 			}
 		}
-		if (!prepath.isEmpty()) if (path.equals(prepath.peek())) prepath.clear();		
+		if (!prePathStack.isEmpty()) if (path.equals(prePathStack.peek())) prePathStack.clear();		
 	}
 	
 	public void paste() {
-		File file = pathtemp;
-		if (iscut) {
-			if (file.isFile()) cutaFile(file);
+		File file = tempFile;
+		if (isCut) {
+			if (file.isFile()) {
+				if (!file.getAbsolutePath().equals((backPathStack.peek()+"\\"+tempFile.getName()).replace("\\\\", "\\")))
+				cutFile(file,new File(backPathStack.peek()+"\\"+tempFile.getName()));
+			}
 			if (file.isDirectory()) {
-				String source = pathtemp.getAbsolutePath();
-				String target = backpath.peek()+"\\"+pathtemp.getName();
+				String source = tempFile.getAbsolutePath();
+				String target = backPathStack.peek()+"\\"+tempFile.getName();
 				File theDir = new File(target);
 				if (!theDir.exists()){
 				    theDir.mkdirs();    
-				    copyaDir(source, target);
-				}
-				deleteDir(new File(source));
+				    copyDir(source, target);
+				    deleteDir(new File(source));
+				}	
 			}
 		} else {
-			if (file.isFile()) copyaFile(file,new File(backpath.peek()+"\\"+pathtemp.getName()));
+			if (file.isFile()) if (!file.getAbsolutePath().equals((backPathStack.peek()+"\\"+tempFile.getName()).replace("\\\\", "\\")))
+				copyFile(file,new File(backPathStack.peek()+"\\"+tempFile.getName()));
 			if (file.isDirectory()) {
-				String source = pathtemp.getAbsolutePath();
-				String target = backpath.peek()+"\\"+pathtemp.getName();
+				String source = tempFile.getAbsolutePath();
+				String target = backPathStack.peek()+"\\"+tempFile.getName();
 				File theDir = new File(target);
 				if (!theDir.exists()){
 				    theDir.mkdirs();    
-				    copyaDir(source, target);
+				    copyDir(source, target);
 				}
 			}
 		}
-		if (backpath!=null)
-			execute("list", backpath.peek());
+		if (backPathStack!=null)
+			executeInBackground("list", backPathStack.peek());
 		pasteItem.setEnabled(false);	
 	}
 	
-	void copyaDir(String source,String target) {
+	void copyDir(String source,String target) {
 		File file = new File(source);
 		File [] filenames = file.listFiles();
 		if (filenames!=null) {
@@ -285,16 +279,16 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 				if (filenames[i].isDirectory()) {
 					File theDir = new File(target+"\\"+filenames[i].getName());
 				    theDir.mkdirs();    
-				    copyaDir(filenames[i].toString(), target+"\\"+filenames[i].getName());
+				    copyDir(filenames[i].toString(), target+"\\"+filenames[i].getName());
 				}
 				if (filenames[i].isFile()) {
-					copyaFile(filenames[i],new File(target+"\\"+filenames[i].getName()));
+					copyFile(filenames[i],new File(target+"\\"+filenames[i].getName()));
 				}
 			}
 		}	
 	}
 	
-	void copyaFile(File file, File output) {
+	void copyFile(File file, File output) {
 		InputStream inStream = null;
         OutputStream outStream = null;
  
@@ -322,55 +316,24 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
         }
 	}
 	
-	void cutaFile(File file) {
-		InputStream inStream = null;
-        OutputStream outStream = null;
- 
-        try {
-            inStream = new FileInputStream(file);
-            outStream = new FileOutputStream(new File(backpath.peek()+"\\"+pathtemp.getName()));	 
-            int length;
-            byte[] buffer = new byte[1024];
-            while ((length = inStream.read(buffer)) > 0) {
-                outStream.write(buffer, 0, length);
-            }
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        } finally {
-            try {
-				inStream.close();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-            try {
-				outStream.close();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-        }
-        try  {         
-			File f= pathtemp;  
-			if (f.isFile()) {
-				if(f.delete()) {  
-					
-    			}  
-    			else  {  
-    				JOptionPane.showMessageDialog(null, "Failed");  
-    			}  
-			} else if (f.isDirectory()) {
-				
-			}
-			
+	void cutFile(File file, File output) {
+		 try  {  
+			copyFile(file, output);              
+			if (file.isFile()) {
+				if(!file.delete()) {  		
+					JOptionPane.showMessageDialog(null, "Failed");  
+				}   
+			}	
 		}  
 		catch(Exception e1)  {  
 			e1.printStackTrace();  
 		}  
 	}
 	
-	public void filecliked(MouseEvent e) {
-		if (e.getClickCount() == 2 && !SwingUtilities.isRightMouseButton(e)) {
+	public void fileCliked(MouseEvent e) {
+		if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
 			try  {  
-				String path = slidelist.getSelectedValue().toString();
+				String path = slideList.getSelectedValue().toString();
 				File file = new File(path);  
 				if (file.isFile()) {
 					if(!Desktop.isDesktopSupported()){
@@ -381,20 +344,19 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 						desktop.open(file);           
 				}  
 				if (file.isDirectory()) {
-					execute("list", path);
-					//listFile(path);
+					executeInBackground("list", path);
 				}
 			} 
 			catch(Exception e1)  {  
 				JOptionPane.showMessageDialog(null, "Error");
 			}  
-        }
-		if(SwingUtilities.isRightMouseButton(e)) {
-			JList list = (JList)e.getSource();
-            int row = list.locationToIndex(e.getPoint());
-            list.setSelectedIndex(row);
-            popupMenu.show(e.getComponent(),e.getX(), e.getY());
-		}
+        } else if(SwingUtilities.isRightMouseButton(e)) {
+    			JList list = (JList)e.getSource();
+                int row = list.locationToIndex(e.getPoint());
+                list.setSelectedIndex(row);
+                popupMenu.show(e.getComponent(),e.getX(), e.getY());
+    	}
+        	
 	}
 	
 	private void deleteDir(File folder) {
@@ -411,17 +373,17 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
         folder.delete();
 	}
 	
-	void execute(String name, String path) {
+	void executeInBackground(String name, String path) {
 		if (!name.equals("list")) {
-			progressBar.setVisible(true);
-	        progressBar.setIndeterminate(true);
+			progressBarLoading.setVisible(true);
+			progressBarLoading.setIndeterminate(true);
 		}
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             public Void doInBackground() {	
             	if (name.equals("paste")) paste();
             	else if (name.equals("delete")) delete();
-            	else if (name.equals("list")) listFile(path);
+            	else if (name.equals("list")) listFiles(path);
                 return null;
             }
 
@@ -433,8 +395,8 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
             @Override
             protected void done() {
             	if (!name.equals("list")) {
-            		progressBar.setIndeterminate(false);
-                    progressBar.setVisible(false);	    
+            		progressBarLoading.setIndeterminate(false);
+            		progressBarLoading.setVisible(false);	    
         		}
         		          
             }
@@ -444,7 +406,7 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		filecliked(e);
+		fileCliked(e);
 	}	
 	
 	@Override
@@ -472,10 +434,10 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 		try {
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
 			if (node.getParent()!=null) {
-				File fi = (File)node.getUserObject();
+				File fi = (File)node.getUserObject();		
 				String path = fi.getAbsolutePath();
-			    read(node,path);
-			    execute("list", path);	
+				readFiles(node,path);
+				executeInBackground("list", path);	
 			}
 		} catch(Exception e1) {	
 		}
@@ -484,89 +446,56 @@ public class MainActivity implements ActionListener, TreeSelectionListener, Mous
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(copyItem)) {
-			iscut = false;
-			pathtemp = new File(slidelist.getSelectedValue().toString());	
+			isCut = false;
+			tempFile = new File(slideList.getSelectedValue().toString());	
 			pasteItem.setEnabled(true);
 		} else if (e.getSource().equals(cutItem)) {
-			iscut = true;
-			pathtemp = new File(slidelist.getSelectedValue().toString());
+			isCut = true;
+			tempFile = new File(slideList.getSelectedValue().toString());
 			pasteItem.setEnabled(true);
 		} else if (e.getSource().equals(pasteItem)) {
-			execute("paste","");
+			executeInBackground("paste","");
 		} else if (e.getSource().equals(propertiesItem)) {
-			new properties(slidelist.getSelectedValue().toString());
+			new Properties(slideList.getSelectedValue().toString());
 		} else if (e.getSource().equals(deleteItem)) {
 			String []list = {"Yes","No"};
-			int n = JOptionPane.showOptionDialog(null,"Do you want delete it?","Messeger",JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,null,list,0);
+			int n = JOptionPane.showOptionDialog(null,"Do you want to delete it?","Messeger",JOptionPane.YES_NO_OPTION,JOptionPane.QUESTION_MESSAGE,null,list,0);
 			if (n==0) {	
-				execute("delete","");
+				executeInBackground("delete","");
 			}
 		} else if (e.getSource().equals(btnBack)) {
-			if (!backpath.isEmpty()) {
-				prepath.push(backpath.pop());
-				if (!backpath.isEmpty()) {
-					execute("list", backpath.pop());				
+			if (!backPathStack.isEmpty()) {
+				prePathStack.push(backPathStack.pop());
+				if (!backPathStack.isEmpty()) {
+					executeInBackground("list", backPathStack.pop());				
 				}				
 			}
 		} else if (e.getSource().equals(btnPre)) {
-			if (!prepath.isEmpty()) {
-				execute("list", prepath.pop());
+			if (!prePathStack.isEmpty()) {
+				executeInBackground("list", prePathStack.pop());
 			}
 		}
 	}
-	
-	private static class MyCellRenderer extends DefaultListCellRenderer  {
 
-        @Override
-        public Component getListCellRendererComponent(JList list, Object value,
-            int index, boolean isSelected, boolean cellHasFocus) {
-            if (value instanceof File) {
-                File file = (File) value;
-                setText(file.getName());
-                setIcon(FileSystemView.getFileSystemView().getSystemIcon(file));
-                if (isSelected) {
-                    setBackground(list.getSelectionBackground());
-                    setForeground(list.getSelectionForeground());
-                } else {
-                    setBackground(list.getBackground());
-                    setForeground(list.getForeground());
-                }
-                setEnabled(list.isEnabled());
-                setFont(list.getFont());
-                setOpaque(true);
-            }
-            return this;
-        }
-    }
-	class FileTreeCellRenderer extends DefaultTreeCellRenderer {
+	@Override
+	public void keyTyped(KeyEvent e) {
+		
+		
+	}
 
-	    private FileSystemView fileSystemView;
-	    private JLabel label;
-	    FileTreeCellRenderer() {
-	        label = new JLabel();
-	        label.setOpaque(true);
-	        fileSystemView = FileSystemView.getFileSystemView();
-	    }
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyCode()==10) {
+			String path = lblAddress.getText().toString();
+			executeInBackground("list", path);
+		}
+		
+	}
 
-	    @Override
-	    public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,
-	        boolean leaf, int row, boolean hasFocus) {
-
-	        DefaultMutableTreeNode node = (DefaultMutableTreeNode)value;
-	        File file = (File)node.getUserObject();
-	        label.setIcon(fileSystemView.getSystemIcon(file));
-	        label.setText(fileSystemView.getSystemDisplayName(file));
-	        label.setToolTipText(file.getPath());
-
-	        if (selected) {
-	            label.setBackground(backgroundSelectionColor);
-	            label.setForeground(textSelectionColor);
-	        } else {
-	            label.setBackground(backgroundNonSelectionColor);
-	            label.setForeground(textNonSelectionColor);
-	        }
-	        return label;
-	    }
+	@Override
+	public void keyReleased(KeyEvent e) {
+		
+		
 	}
 		
 }
